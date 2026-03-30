@@ -11,8 +11,10 @@ import {
 import RemoveClothesFromBasket from "../components/RemoveClothesFromBasket";
 import EditClothesAmountButton from "../components/EditClothesAmountButton";
 import { colors } from "../utils/variables.js";
+import { useTheme } from "../contexts/themeContext";
 
 const BasketPage = ({ basket, setBasket }) => {
+  const { theme } = useTheme();
   const [totalAmount, setTotalAmount] = useState(0);
 
   useEffect(() => {
@@ -20,7 +22,6 @@ const BasketPage = ({ basket, setBasket }) => {
 
     basket.forEach((item) => {
       let currentPrice = parseFloat(item?.price?.substr(1)) ?? 0;
-
       totalPrice += item.basket_count * currentPrice;
     });
 
@@ -29,7 +30,7 @@ const BasketPage = ({ basket, setBasket }) => {
 
   const renderItem = ({ item }) => {
     return (
-      <View style={styles.item}>
+      <View style={[styles.item, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}>
         <View style={styles.left}>
           <Image
             style={styles.productImage}
@@ -39,10 +40,10 @@ const BasketPage = ({ basket, setBasket }) => {
           />
         </View>
         <View style={styles.right}>
-          <Text numberOfLines={4} ellipsizeMode="tail" style={styles.title}>
+          <Text numberOfLines={4} ellipsizeMode="tail" style={[styles.title, { color: theme.text }]}>
             {item.title}
           </Text>
-          <Text style={styles.priceValue}>{item.price}</Text>
+          <Text style={[styles.priceValue, { color: theme.primary }]}>{item.price}</Text>
           <EditClothesAmountButton
             basket={basket}
             setBasket={setBasket}
@@ -62,15 +63,15 @@ const BasketPage = ({ basket, setBasket }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <FlatList
         data={basket}
         renderItem={renderItem}
         keyExtractor={(item) => item.basket_id}
       />
       <View>
-        <Pressable style={styles.checkoutButton}>
-          <Text style={styles.checkoutTitle}>Checkout ${totalAmount}</Text>
+        <Pressable style={[styles.checkoutButton, { backgroundColor: theme.primary }]}>
+          <Text style={styles.checkoutTitle}>Checkout ${totalAmount.toFixed(2)}</Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -82,7 +83,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 16,
     justifyContent: "center",
-    backgroundColor: colors.white,
   },
   item: {
     position: "relative",
@@ -92,14 +92,11 @@ const styles = StyleSheet.create({
     margin: 8,
     borderWidth: 1,
     borderRadius: 20,
-    borderColor: colors.border,
-    backgroundColor: colors.lightgrey,
   },
   checkoutButton: {
     alignItems: "center",
     borderRadius: 8,
     elevation: 3,
-    backgroundColor: colors.darkviolet,
     marginLeft: 8,
     marginRight: 8,
     marginTop: 5,
@@ -131,11 +128,9 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontWeight: "bold",
     letterSpacing: 0.25,
-    color: colors.darkgrey,
     marginBottom: 10,
   },
   priceValue: {
-    color: colors.darkviolet,
     fontSize: 20,
     fontWeight: "bold",
     marginBottom: 10,
