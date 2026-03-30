@@ -11,6 +11,7 @@ import {
 import { colors } from "../utils/variables.js";
 import AddToBasketButton from "../components/AddToBasketButton";
 import RemoveFavouriteButton from "../components/RemoveFavouriteButton";
+import { useTheme } from "../contexts/themeContext";
 
 const FavouritesPage = ({
   navigation,
@@ -19,27 +20,29 @@ const FavouritesPage = ({
   favourites,
   setFavourites,
 }) => {
+  const { theme } = useTheme();
+
   const handleNavigateToBasketPage = () => {
     navigation.navigate("Basket");
   };
 
   const renderItem = ({ item }) => {
     return (
-      <View style={styles.item}>
+      <View style={[styles.item, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}>
         <View style={styles.bottom}>
           <View style={styles.left}>
             <View style={styles.description}>
-              <Text numberOfLines={3} ellipsizeMode="tail" style={styles.title}>
+              <Text numberOfLines={3} ellipsizeMode="tail" style={[styles.title, { color: theme.text }]}>
                 {item.title}
               </Text>
               <View style={styles.category}>
-                <Text style={styles.categoryValue}>
-                  {item.category.toUpperCase()}
+                <Text style={[styles.categoryValue, { color: theme.textSecondary }]}>
+                  {item.category?.toUpperCase()}
                 </Text>
               </View>
             </View>
             <View style={styles.price}>
-              <Text style={styles.priceValue}>{item.price}</Text>
+              <Text style={[styles.priceValue, { color: theme.primary }]}>{item.price}</Text>
             </View>
             <View style={styles.buttonArea}>
               <View style={styles.buttonAddBasket}>
@@ -70,15 +73,15 @@ const FavouritesPage = ({
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <FlatList
         data={favourites}
         renderItem={renderItem}
-        keyExtractor={(item) => item.clothes_id}
+        keyExtractor={(item) => item.clothes_id.toString()}
       />
       <View>
         <Pressable
-          style={styles.viewBasketButton}
+          style={[styles.viewBasketButton, { backgroundColor: theme.primary }]}
           onPress={handleNavigateToBasketPage}
         >
           <Text style={styles.viewBasketTitle}>View Basket</Text>
@@ -93,7 +96,6 @@ const styles = StyleSheet.create({
     flex: 2,
     paddingTop: 16,
     justifyContent: "center",
-    backgroundColor: colors.white,
   },
   item: {
     padding: 16,
@@ -101,8 +103,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
     borderWidth: 1,
     borderRadius: 20,
-    borderColor: colors.border,
-    backgroundColor: colors.lightgrey,
   },
   top: {
     flex: 1,
@@ -116,7 +116,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     paddingRight: 5,
     fontWeight: "bold",
-    color: colors.darkgrey,
   },
   productImage: {
     resizeMode: "cover",
@@ -129,7 +128,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 8,
     elevation: 3,
-    backgroundColor: colors.darkviolet,
     marginLeft: 8,
     marginRight: 8,
     marginTop: 5,
@@ -170,10 +168,8 @@ const styles = StyleSheet.create({
   },
   priceTitle: {
     fontSize: 16,
-    color: colors.darkgrey,
   },
   priceValue: {
-    color: colors.darkgrey,
     fontSize: 16,
     fontWeight: "bold",
   },
@@ -182,11 +178,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   categoryTitle: {
-    color: colors.darkgrey,
     fontSize: 16,
   },
   categoryValue: {
-    color: colors.darkgrey,
     fontSize: 16,
   },
   buttonArea: {
@@ -194,7 +188,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   buttonRemove: {
-    color: colors.darkviolet,
     marginLeft: 20,
   },
 });

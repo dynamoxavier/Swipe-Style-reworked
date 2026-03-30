@@ -14,9 +14,11 @@ import { UserContext } from "../contexts/userContext";
 import { patchUserPreferences } from "../utils/api.js";
 import DeveloperSettings from "../components/EditTagFrequency";
 import { colors } from "../utils/variables.js";
+import { useTheme } from "../contexts/themeContext";
 
 const SettingsPage = () => {
   const { user } = useContext(UserContext);
+  const { isDarkMode, toggleTheme, theme } = useTheme();
 
   const handleSignOut = () => {
     signOut(auth)
@@ -65,19 +67,31 @@ const SettingsPage = () => {
   };
 
   return (
-    <View style={styles.buttons}>
+    <View style={[styles.buttons, { backgroundColor: theme.background }]}>
+      <TouchableOpacity
+        style={[styles.themeButton, { backgroundColor: theme.primary }]}
+        onPress={toggleTheme}
+      >
+        <Text style={[styles.themeButtonText, { color: theme.text }]}>
+          {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+        </Text>
+      </TouchableOpacity>
+      
+
       <DeveloperSettings />
+      
       <Button
         color={colors.darkviolet}
         onPress={resetRecommendations}
         title="Reset Recommendations"
         style={styles.reset}
-      ></Button>
+      />
+      
       <Button
         onPress={handleSignOut}
         title="Sign Out"
         style={styles.signout}
-      ></Button>
+      />
     </View>
   );
 };
@@ -89,17 +103,25 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.white,
+    padding: 20,
   },
-
+  themeButton: {
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 20,
+    width: '80%',
+  },
+  themeButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
   reset: {
     margin: 10,
     backgroundColor: colors.red,
   },
-
   signout: {
     marginTop: 10,
-    color: colors.white,
     backgroundColor: colors.darkgrey,
   },
 });

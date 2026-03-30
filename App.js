@@ -3,14 +3,18 @@ import { StyleSheet } from "react-native";
 import { UserProvider } from "./contexts/userContext";
 import { LoadingProvider } from "./contexts/loadingContext";
 import RootNavigator from "./navigation/RootNavigator";
+import { ThemeProvider } from './contexts/themeContext';
+
 
 export default function App() {
   return (
-    <LoadingProvider>
+    <ThemeProvider>
       <UserProvider>
-        <RootNavigator />
+        <LoadingProvider>
+          <RootNavigator />
+        </LoadingProvider>
       </UserProvider>
-    </LoadingProvider>
+    </ThemeProvider>
   );
 }
 

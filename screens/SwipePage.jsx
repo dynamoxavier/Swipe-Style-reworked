@@ -15,9 +15,11 @@ import {
 import { useContext } from "react";
 import { UserContext } from "../contexts/userContext";
 import LoadingSpinner from "../components/LoadingSpinner.jsx";
+import { useTheme } from "../contexts/themeContext";
 
 const SwipePage = ({ setFavourites }) => {
   const { user } = useContext(UserContext);
+  const { theme } = useTheme();
   const swiperRef = createRef();
   const favAnimation = useRef(null);
   const [clothesData, setClothesData] = useState(data);
@@ -127,9 +129,9 @@ const SwipePage = ({ setFavourites }) => {
     }
     if (item.title) {
       //if the brand, color or category already exist in title, dont add them
-      let lowerCaseBrand = item.brand.toLowerCase();
-      let lowerCaseColor = item.color.toLowerCase();
-      let lowerCaseCategory = item.category.toLowerCase();
+      let lowerCaseBrand = item.brand ? item.brand.toLowerCase() : "";
+      let lowerCaseColor = item.color ? item.color.toLowerCase() : "";
+      let lowerCaseCategory = item.category ? item.category.toLowerCase() : "";
       let title = item.title
         .replace(lowerCaseBrand, "")
         .replace(lowerCaseColor, "")
@@ -156,35 +158,35 @@ const SwipePage = ({ setFavourites }) => {
     newPreferences.title = newPreferences.title || {};
 
     if (item.brand) {
-      item.brand = item.brand.toLowerCase();
-      if (newPreferences.brand[item.brand]) {
-        newPreferences.brand[item.brand]--;
-        if (newPreferences.brand[item.brand] === 0) {
-          delete newPreferences.brand[item.brand];
+      let brand = item.brand.toLowerCase();
+      if (newPreferences.brand[brand]) {
+        newPreferences.brand[brand]--;
+        if (newPreferences.brand[brand] === 0) {
+          delete newPreferences.brand[brand];
         }
       }
     }
     if (item.category) {
-      item.category = item.category.toLowerCase();
-      if (newPreferences.category[item.category]) {
-        newPreferences.category[item.category]--;
-        if (newPreferences.category[item.category] === 0) {
-          delete newPreferences.category[item.category];
+      let category = item.category.toLowerCase();
+      if (newPreferences.category[category]) {
+        newPreferences.category[category]--;
+        if (newPreferences.category[category] === 0) {
+          delete newPreferences.category[category];
         }
       }
     }
     if (item.color) {
-      item.color = item.color.toLowerCase();
-      if (newPreferences.color[item.color]) {
-        newPreferences.color[item.color]--;
-        if (newPreferences.color[item.color] === 0) {
-          delete newPreferences.color[item.color];
+      let color = item.color.toLowerCase();
+      if (newPreferences.color[color]) {
+        newPreferences.color[color]--;
+        if (newPreferences.color[color] === 0) {
+          delete newPreferences.color[color];
         }
       }
     }
     if (item.title) {
-      item.title = item.title.toLowerCase();
-      let titleWords = item.title.split(" ");
+      let title = item.title.toLowerCase();
+      let titleWords = title.split(" ");
       titleWords.forEach((word) => {
         word = word.toLowerCase();
         if (newPreferences.title[word]) {
@@ -232,7 +234,7 @@ const SwipePage = ({ setFavourites }) => {
   const handleAddToFavorite = async (card) => {
     console.log("double tap");
     setTapCount(2);
-    try { 
+    try {
       handleSwipeOnPress(1);
       setTimeout(() => {
         setTapCount(0);
@@ -245,18 +247,18 @@ const SwipePage = ({ setFavourites }) => {
 
           const newClothesAddedToFavourites = {
             "favourite_id": favourite.favourite_id,
-						"clothes_id": favourite.clothes_id,
-						"uid": favourite.uid,
-						"title": card.title,
+            "clothes_id": favourite.clothes_id,
+            "uid": favourite.uid,
+            "title": card.title,
             "category": card.category,
-						"item_img_url": card.item_img_url,
-						"price": card.price,
+            "item_img_url": card.item_img_url,
+            "price": card.price,
           };
 
           setFavourites((currCards) => [newClothesAddedToFavourites, ...currCards]);
         })
     } catch (err) {
-        console.log(err);
+      console.log(err);
     }
   };
 
@@ -269,33 +271,34 @@ const SwipePage = ({ setFavourites }) => {
     }
   }, [tapCount]);
 
-  //added some error handling if img_url undefined
+  // Card component with theme support
   const Card = ({ card }) => {
     return (
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}>
         {card.item_img_url ? (
           <Image
             source={{ uri: `https://${card.item_img_url}` }}
             style={styles.cardImage}
           />
         ) : (
-          <Text style={styles.cardTitle}>Error: Image URL is undefined</Text>
+          <Text style={[styles.cardTitle, { color: theme.text }]}>Error: Image URL is undefined</Text>
         )}
-        <Text style={styles.cardTitle}>{card.title}</Text>
+        <Text style={[styles.cardTitle, { color: theme.text }]}>{card.title}</Text>
       </View>
     );
   };
 
+  // Buttons component with theme support
   const Buttons = () => {
     return (
       <View style={styles.icons}>
         <IconButton
           icon={(props) => <Icon name="back" {...props} />}
-          color={colors.darkgrey}
+          color={theme.textSecondary}
           size={30}
-          backgroundColor={colors.white}
+          backgroundColor={theme.cardBackground}
           borderWidth={1}
-          borderColor={colors.border}
+          borderColor={theme.border}
           onPress={() => handleSwipeBack()}
         />
         <Icon
@@ -314,9 +317,9 @@ const SwipePage = ({ setFavourites }) => {
           icon={(props) => <Icon name="heart" {...props} />}
           color={colors.darkviolet}
           size={30}
-          backgroundColor={colors.white}
+          backgroundColor={theme.cardBackground}
           borderWidth={1}
-          borderColor={colors.border}
+          borderColor={theme.border}
           onPress={() => handleAddToFavorite(clothesData[index])}
         />
       </View>
@@ -326,10 +329,10 @@ const SwipePage = ({ setFavourites }) => {
   return intialLoading ? (
     <LoadingSpinner />
   ) : (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* DISPLAY ERROR  */}
       {error && (
-        <Text style={styles.errorText}>
+        <Text style={[styles.errorText, { color: theme.textSecondary }]}>
           An error occurred trying to fetch the data. Put a button here, try
           again?
         </Text>
@@ -354,7 +357,7 @@ const SwipePage = ({ setFavourites }) => {
               stackSize={5}
               stackSeparation={10}
               infinite={false}
-              backgroundColor={colors.white}
+              backgroundColor={theme.background}
               verticalSwipe={false}
               disableBottomSwipe
               disableTopSwipe
@@ -389,7 +392,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     position: "relative",
-    backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -427,19 +429,16 @@ const styles = StyleSheet.create({
     flex: 0.7,
     borderRadius: 20,
     justifyContent: "center",
-    backgroundColor: colors.white,
     paddingBottom: 25,
     alignItems: "center",
     borderWidth: 1,
     borderStyle: "solid",
-    borderColor: colors.border,
   },
   cardImage: {
     position: "relative",
     width: "100%",
     flex: 1,
     resizeMode: "cover",
-    backgroundColor: "#fff",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },
@@ -457,7 +456,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 50,
   },
-
   heartLottie: {
     width: 200,
     position: "absolute",
@@ -466,6 +464,10 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     zIndex: 500,
     pointerEvents: "box-none",
+  },
+  errorText: {
+    textAlign: "center",
+    fontSize: 16,
   },
 });
 
