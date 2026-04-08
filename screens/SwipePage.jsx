@@ -1,5 +1,5 @@
 import React, { useState, useRef, createRef, useEffect } from "react";
-import { StyleSheet, Text, View, Image, TextInput, TouchableOpacity } from "react-native";
+import { StyleSheet, Text, View, Image, TextInput, TouchableOpacity, Share, Alert } from "react-native";
 import Icon from "react-native-vector-icons/AntDesign";
 import { Ionicons } from '@expo/vector-icons';
 import data from "../data.js";
@@ -31,6 +31,33 @@ const SwipePage = ({ setFavourites }) => {
   const [isPressed, setIsPressed] = useState(false);
   const [intialLoading, setIntialLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Share item function
+  const shareItem = async (item) => {
+    if (!item) return;
+    
+    try {
+      const message = `👕 Check out this ${item.title || 'item'}!\n\n💰 Price: ${item.price || 'N/A'}\n🏷️ Brand: ${item.brand || 'Unknown'}\n🎨 Style: ${item.style || 'Various'}\n\nShared from Swipe Style App - Find your perfect outfit!`;
+      
+      const result = await Share.share({
+        message: message,
+        title: item.title,
+      });
+      
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          console.log('Shared via:', result.activityType);
+        } else {
+          console.log('Shared successfully');
+        }
+      } else if (result.action === Share.dismissedAction) {
+        console.log('Share dismissed');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Could not share this item');
+      console.log(error);
+    }
+  };
 
   // Search filter function
   useEffect(() => {
@@ -83,7 +110,7 @@ const SwipePage = ({ setFavourites }) => {
     fetchUserDataThenSetPreferences();
   }, []);
 
-  // Rest of your existing useEffect remains the same
+  //user.uid will need passing in to these functions
   useEffect(() => {
     const fetchSuggestedClothesAndConcat = async () => {
       try {
@@ -107,24 +134,33 @@ const SwipePage = ({ setFavourites }) => {
       }
     };
 
+    //on every 10th index
     if (index % 10 === 0) {
       patchUserPreferencesUseEffect();
+      //every 10+5 index
     } else if (index % 10 !== 0 && index % 5 === 0) {
       fetchSuggestedClothesAndConcat();
     }
   }, [index]);
 
-  // Add to preferences function (your existing code)
+  //this will add an item to user preferences
   const addToPreferences = (item) => {
+    //create a copy of preferences object from state
     let newPreferences = Object.assign({}, preferences);
+
+    //init the object, make sure it has correct keys
     newPreferences.brand = newPreferences.brand || {};
     newPreferences.category = newPreferences.category || {};
     newPreferences.color = newPreferences.color || {};
     newPreferences.title = newPreferences.title || {};
 
+    //sometimes getting error, crashing program, item.brand = undefined, so i added if statements
     if (item.brand) {
+      //make everything lowercase
       let lowerCaseBrand = item.brand.toLowerCase();
       newPreferences.brand[lowerCaseBrand] =
+        //if it doesnt exist, create it and set it to 0, then increment by 1
+        //this means if it doesnt exist, it will be 1. if it exists it will be +=1
         (newPreferences.brand[lowerCaseBrand] || 0) + 1;
     }
     if (item.category) {
@@ -138,9 +174,10 @@ const SwipePage = ({ setFavourites }) => {
         (newPreferences.color[lowerCaseColor] || 0) + 1;
     }
     if (item.title) {
-      let lowerCaseBrand = item.brand?.toLowerCase() || "";
-      let lowerCaseColor = item.color?.toLowerCase() || "";
-      let lowerCaseCategory = item.category?.toLowerCase() || "";
+      //if the brand, color or category already exist in title, dont add them
+      let lowerCaseBrand = item.brand ? item.brand.toLowerCase() : "";
+      let lowerCaseColor = item.color ? item.color.toLowerCase() : "";
+      let lowerCaseCategory = item.category ? item.category.toLowerCase() : "";
       let title = item.title
         .replace(lowerCaseBrand, "")
         .replace(lowerCaseColor, "")
@@ -208,6 +245,7 @@ const SwipePage = ({ setFavourites }) => {
     setPreferences(newPreferences);
   };
 
+  // GESTURES
   const handleSwipeOnPress = (preference) => {
     preference === 1
       ? swiperRef.current.swipeRight()
@@ -269,6 +307,7 @@ const SwipePage = ({ setFavourites }) => {
     }
   };
 
+  // animation of adding to Favourites
   useEffect(() => {
     if (tapCount === 2) {
       setIsPressed(true);
@@ -277,6 +316,7 @@ const SwipePage = ({ setFavourites }) => {
     }
   }, [tapCount]);
 
+  //added some error handling if img_url undefined
   const Card = ({ card }) => {
     return (
       <View style={styles.card}>
@@ -289,7 +329,15 @@ const SwipePage = ({ setFavourites }) => {
           <Text style={styles.cardTitle}>Error: Image URL is undefined</Text>
         )}
         <Text style={styles.cardTitle}>{card.title}</Text>
-        {/* Display search match info if searching */}
+        
+        {/* Share button on card */}
+        <TouchableOpacity 
+          style={styles.cardShareButton}
+          onPress={() => shareItem(card)}
+        >
+          <Ionicons name="share-social" size={24} color="#7209b7" />
+        </TouchableOpacity>
+        
         {searchQuery !== '' && (
           <View style={styles.searchMatchBadge}>
             <Text style={styles.searchMatchText}>
@@ -325,6 +373,16 @@ const SwipePage = ({ setFavourites }) => {
           color={colors.green}
           onPress={() => handleSwipeOnPress(1)}
         />
+        {/* Share Button */}
+        <IconButton
+          icon={(props) => <Icon name="sharealt" {...props} />}
+          color={colors.violet}
+          size={30}
+          backgroundColor={colors.white}
+          borderWidth={1}
+          borderColor={colors.border}
+          onPress={() => shareItem(filteredClothes[index])}
+        />
         <IconButton
           icon={(props) => <Icon name="heart" {...props} />}
           color={colors.darkviolet}
@@ -342,6 +400,7 @@ const SwipePage = ({ setFavourites }) => {
     <LoadingSpinner />
   ) : (
     <View style={styles.container}>
+      {/* DISPLAY ERROR  */}
       {error && (
         <Text style={styles.errorText}>
           An error occurred trying to fetch the data. Put a button here, try
@@ -350,7 +409,7 @@ const SwipePage = ({ setFavourites }) => {
       )}
       {!error && (
         <>
-          {/* SEARCH BAR - ADDED HERE */}
+          {/* SEARCH BAR */}
           <View style={styles.searchContainer}>
             <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
             <TextInput
@@ -375,6 +434,7 @@ const SwipePage = ({ setFavourites }) => {
           )}
 
           <View style={styles.swiperView}>
+            {/* DISPLAY ADDING TO FAVOURITES ANIMATION */}
             <LottieView
               ref={favAnimation}
               style={[styles.heartLottie, !isPressed && { display: "none" }]}
@@ -559,6 +619,19 @@ const styles = StyleSheet.create({
     marginLeft: 5,
     marginRight: 5,
     textAlign: "center",
+  },
+  cardShareButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    backgroundColor: '#fff',
+    borderRadius: 30,
+    padding: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   icons: {
     width: "100%",
