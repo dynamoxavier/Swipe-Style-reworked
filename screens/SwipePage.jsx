@@ -16,9 +16,11 @@ import {
 import { useContext } from "react";
 import { UserContext } from "../contexts/userContext";
 import LoadingSpinner from "../components/LoadingSpinner.jsx";
+import { useTheme } from "../contexts/themeContext";
 
 const SwipePage = ({ setFavourites, addToLikedHistory, addToDislikedHistory }) => {
   const { user } = useContext(UserContext);
+  const { theme } = useTheme();
   const swiperRef = createRef();
   const favAnimation = useRef(null);
   const [clothesData, setClothesData] = useState(data);
@@ -274,28 +276,28 @@ const SwipePage = ({ setFavourites, addToLikedHistory, addToDislikedHistory }) =
   const Card = ({ card }) => {
     if (!card) {
       return (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Loading...</Text>
+        <View style={[styles.card, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}>
+          <Text style={[styles.cardTitle, { color: theme.text }]}>Loading...</Text>
         </View>
       );
     }
     
     return (
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}>
         {card.item_img_url ? (
           <Image
             source={{ uri: card.item_img_url.startsWith('http') ? card.item_img_url : `https://${card.item_img_url}` }}
             style={styles.cardImage}
           />
         ) : (
-          <View style={styles.placeholderImage}>
-            <Text style={styles.placeholderText}>No Image Available</Text>
+          <View style={[styles.placeholderImage, { backgroundColor: theme.cardBackground }]}>
+            <Text style={[styles.placeholderText, { color: theme.textSecondary }]}>No Image Available</Text>
           </View>
         )}
-        <Text style={styles.cardTitle}>{card.title || 'Untitled Item'}</Text>
+        <Text style={[styles.cardTitle, { color: theme.text }]}>{card.title || 'Untitled Item'}</Text>
         
         <TouchableOpacity 
-          style={styles.cardShareButton}
+          style={[styles.cardShareButton, { backgroundColor: theme.cardBackground }]}
           onPress={() => shareItem(card)}
         >
           <Ionicons name="share-social" size={24} color="#7209b7" />
@@ -313,9 +315,9 @@ const SwipePage = ({ setFavourites, addToLikedHistory, addToDislikedHistory }) =
           icon={(props) => <Icon name="back" {...props} />}
           color={colors.darkgrey}
           size={30}
-          backgroundColor={colors.white}
+          backgroundColor={theme.cardBackground}
           borderWidth={1}
-          borderColor={colors.border}
+          borderColor={theme.border}
           onPress={() => handleSwipeBack()}
         />
         <Icon
@@ -334,18 +336,18 @@ const SwipePage = ({ setFavourites, addToLikedHistory, addToDislikedHistory }) =
           icon={(props) => <Icon name="sharealt" {...props} />}
           color={colors.violet}
           size={30}
-          backgroundColor={colors.white}
+          backgroundColor={theme.cardBackground}
           borderWidth={1}
-          borderColor={colors.border}
+          borderColor={theme.border}
           onPress={() => currentItem && shareItem(currentItem)}
         />
         <IconButton
           icon={(props) => <Icon name="heart" {...props} />}
           color={colors.darkviolet}
           size={30}
-          backgroundColor={colors.white}
+          backgroundColor={theme.cardBackground}
           borderWidth={1}
-          borderColor={colors.border}
+          borderColor={theme.border}
           onPress={() => currentItem && handleAddToFavorite(currentItem)}
         />
       </View>
@@ -355,9 +357,9 @@ const SwipePage = ({ setFavourites, addToLikedHistory, addToDislikedHistory }) =
   return intialLoading ? (
     <LoadingSpinner />
   ) : (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {error && (
-        <Text style={styles.errorText}>
+        <Text style={[styles.errorText, { color: theme.text }]}>
           An error occurred trying to fetch the data.
         </Text>
       )}
@@ -381,7 +383,7 @@ const SwipePage = ({ setFavourites, addToLikedHistory, addToDislikedHistory }) =
                 stackSize={5}
                 stackSeparation={10}
                 infinite={false}
-                backgroundColor={colors.white}
+                backgroundColor={theme.background}
                 verticalSwipe={false}
                 disableBottomSwipe
                 disableTopSwipe
@@ -457,19 +459,16 @@ const styles = StyleSheet.create({
     flex: 0.7,
     borderRadius: 20,
     justifyContent: "center",
-    backgroundColor: colors.white,
     paddingBottom: 25,
     alignItems: "center",
     borderWidth: 1,
     borderStyle: "solid",
-    borderColor: colors.border,
   },
   cardImage: {
     position: "relative",
     width: "100%",
     flex: 1,
     resizeMode: "cover",
-    backgroundColor: "#fff",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },
