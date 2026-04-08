@@ -1,5 +1,5 @@
 import React, { useState, useRef, createRef, useEffect } from "react";
-import { StyleSheet, Text, View, Image, TextInput, TouchableOpacity, Share, Alert } from "react-native";
+import { StyleSheet, Text, View, Image, TouchableOpacity, Share, Alert } from "react-native";
 import Icon from "react-native-vector-icons/AntDesign";
 import { Ionicons } from '@expo/vector-icons';
 import data from "../data.js";
@@ -22,15 +22,13 @@ const SwipePage = ({ setFavourites }) => {
   const swiperRef = createRef();
   const favAnimation = useRef(null);
   const [clothesData, setClothesData] = useState(data);
-  const [filteredClothes, setFilteredClothes] = useState(data);
-  const [index, setIndex] = useState(0); // Changed from 1 to 0 to avoid out of bounds
+  const [index, setIndex] = useState(0);
   const [tapCount, setTapCount] = useState(0);
   const [lastTime, setLastTime] = useState(0);
   const [preferences, setPreferences] = useState({});
   const [error, setError] = useState(null);
   const [isPressed, setIsPressed] = useState(false);
   const [intialLoading, setIntialLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
 
   // Share item function
   const shareItem = async (item) => {
@@ -39,56 +37,21 @@ const SwipePage = ({ setFavourites }) => {
     try {
       const message = `👕 Check out this ${item.title || 'item'}!\n\n💰 Price: ${item.price || 'N/A'}\n🏷️ Brand: ${item.brand || 'Unknown'}\n🎨 Style: ${item.style || 'Various'}\n\nShared from Swipe Style App - Find your perfect outfit!`;
       
-      const result = await Share.share({
+      await Share.share({
         message: message,
         title: item.title,
       });
-      
-      if (result.action === Share.sharedAction) {
-        if (result.activityType) {
-          console.log('Shared via:', result.activityType);
-        } else {
-          console.log('Shared successfully');
-        }
-      } else if (result.action === Share.dismissedAction) {
-        console.log('Share dismissed');
-      }
     } catch (error) {
       Alert.alert('Error', 'Could not share this item');
-      console.log(error);
     }
   };
 
-  // Search filter function
-  useEffect(() => {
-    if (searchQuery === '') {
-      setFilteredClothes(clothesData);
-    } else {
-      const filtered = clothesData.filter(item => {
-        if (!item) return false;
-        return (
-          (item.title?.toLowerCase().includes(searchQuery.toLowerCase()) || false) ||
-          (item.brand?.toLowerCase().includes(searchQuery.toLowerCase()) || false) ||
-          (item.style?.toLowerCase().includes(searchQuery.toLowerCase()) || false) ||
-          (item.category?.toLowerCase().includes(searchQuery.toLowerCase()) || false) ||
-          (item.color?.toLowerCase().includes(searchQuery.toLowerCase()) || false)
-        );
-      });
-      setFilteredClothes(filtered);
-      // Reset index when filtering
-      setIndex(0);
-    }
-  }, [searchQuery, clothesData]);
-
-  //this fetches the initial array of 10 items. user.uid needs passing in
   useEffect(() => {
     const fetchInitialSuggestedClothes = async () => {
       setIntialLoading(true);
       try {
         const clothesFromAPI = await suggestedClothes(user);
-        const clothesArray = clothesFromAPI.data.suggestedClothes || [];
-        setClothesData(clothesArray);
-        setFilteredClothes(clothesArray);
+        setClothesData(clothesFromAPI.data.suggestedClothes);
         setIntialLoading(false);
       } catch (err) {
         setError(err);
@@ -103,7 +66,6 @@ const SwipePage = ({ setFavourites }) => {
         const existingUserPreferences = JSON.parse(
           userFromAPI.data.user.preferences || "{}"
         );
-
         setPreferences(existingUserPreferences);
       } catch (err) {
         console.log(err, "couldnt fetch existing user preferences");
@@ -114,14 +76,12 @@ const SwipePage = ({ setFavourites }) => {
     fetchUserDataThenSetPreferences();
   }, []);
 
-  //user.uid will need passing in to these functions
   useEffect(() => {
     const fetchSuggestedClothesAndConcat = async () => {
       try {
         const clothesFromAPI = await suggestedClothes(user);
         const newData = [...clothesData, ...(clothesFromAPI.data.suggestedClothes || [])];
         setClothesData(newData);
-        setFilteredClothes(newData);
       } catch (err) {
         console.log(err);
       }
@@ -130,13 +90,12 @@ const SwipePage = ({ setFavourites }) => {
     const patchUserPreferencesUseEffect = async () => {
       try {
         const data = JSON.stringify(preferences);
-        const res = await patchUserPreferences(user, { preferences: data });
+        await patchUserPreferences(user, { preferences: data });
       } catch (err) {
         console.log(err);
       }
     };
 
-    // Make sure index is valid before doing anything
     if (index > 0 && index % 10 === 0) {
       patchUserPreferencesUseEffect();
     } else if (index > 0 && index % 10 !== 0 && index % 5 === 0) {
@@ -144,40 +103,28 @@ const SwipePage = ({ setFavourites }) => {
     }
   }, [index]);
 
-  //this will add an item to user preferences
   const addToPreferences = (item) => {
     if (!item) return;
     
-    //create a copy of preferences object from state
     let newPreferences = Object.assign({}, preferences);
-
-    //init the object, make sure it has correct keys
     newPreferences.brand = newPreferences.brand || {};
     newPreferences.category = newPreferences.category || {};
     newPreferences.color = newPreferences.color || {};
     newPreferences.title = newPreferences.title || {};
 
-    //sometimes getting error, crashing program, item.brand = undefined, so i added if statements
     if (item.brand) {
-      //make everything lowercase
       let lowerCaseBrand = item.brand.toLowerCase();
-      newPreferences.brand[lowerCaseBrand] =
-        //if it doesnt exist, create it and set it to 0, then increment by 1
-        //this means if it doesnt exist, it will be 1. if it exists it will be +=1
-        (newPreferences.brand[lowerCaseBrand] || 0) + 1;
+      newPreferences.brand[lowerCaseBrand] = (newPreferences.brand[lowerCaseBrand] || 0) + 1;
     }
     if (item.category) {
       let lowerCaseCategory = item.category.toLowerCase();
-      newPreferences.category[lowerCaseCategory] =
-        (newPreferences.category[lowerCaseCategory] || 0) + 1;
+      newPreferences.category[lowerCaseCategory] = (newPreferences.category[lowerCaseCategory] || 0) + 1;
     }
     if (item.color) {
       let lowerCaseColor = item.color.toLowerCase();
-      newPreferences.color[lowerCaseColor] =
-        (newPreferences.color[lowerCaseColor] || 0) + 1;
+      newPreferences.color[lowerCaseColor] = (newPreferences.color[lowerCaseColor] || 0) + 1;
     }
     if (item.title) {
-      //if the brand, color or category already exist in title, dont add them
       let lowerCaseBrand = item.brand ? item.brand.toLowerCase() : "";
       let lowerCaseColor = item.color ? item.color.toLowerCase() : "";
       let lowerCaseCategory = item.category ? item.category.toLowerCase() : "";
@@ -190,8 +137,7 @@ const SwipePage = ({ setFavourites }) => {
       titleWords.forEach((word) => {
         let lowerCaseWord = word.toLowerCase();
         if (!listOfAvoidWords.includes(lowerCaseWord) && word.length > 2) {
-          newPreferences.title[lowerCaseWord] =
-            (newPreferences.title[lowerCaseWord] || 0) + 1;
+          newPreferences.title[lowerCaseWord] = (newPreferences.title[lowerCaseWord] || 0) + 1;
         }
       });
     }
@@ -250,7 +196,6 @@ const SwipePage = ({ setFavourites }) => {
     setPreferences(newPreferences);
   };
 
-  // GESTURES
   const handleSwipeOnPress = (preference) => {
     preference === 1
       ? swiperRef.current?.swipeRight()
@@ -258,8 +203,7 @@ const SwipePage = ({ setFavourites }) => {
   };
 
   const handleSwipe = (preference) => {
-    console.log(index);
-    const currentItem = filteredClothes[index];
+    const currentItem = clothesData[index];
     if (currentItem) {
       if (preference === 1) {
         addToPreferences(currentItem);
@@ -279,7 +223,7 @@ const SwipePage = ({ setFavourites }) => {
     const myTime = new Date();
     const mySec = myTime.getTime();
     if (mySec - lastTime < 250) {
-      const currentItem = filteredClothes[index];
+      const currentItem = clothesData[index];
       if (currentItem) {
         handleAddToFavorite(currentItem);
       }
@@ -290,7 +234,6 @@ const SwipePage = ({ setFavourites }) => {
   const handleAddToFavorite = async (card) => {
     if (!card) return;
     
-    console.log("double tap");
     setTapCount(2);
     try { 
       handleSwipeOnPress(1);
@@ -302,7 +245,6 @@ const SwipePage = ({ setFavourites }) => {
       postFavouritesByUserId(user, card.clothes_id)
         .then((clothesAddedToFavourites) => {
           const { favourite } = clothesAddedToFavourites.data;
-
           const newClothesAddedToFavourites = {
             "favourite_id": favourite.favourite_id,
             "clothes_id": favourite.clothes_id,
@@ -312,7 +254,6 @@ const SwipePage = ({ setFavourites }) => {
             "item_img_url": card.item_img_url,
             "price": card.price,
           };
-
           setFavourites((currCards) => [newClothesAddedToFavourites, ...currCards]);
         })
     } catch (err) {
@@ -320,7 +261,6 @@ const SwipePage = ({ setFavourites }) => {
     }
   };
 
-  // animation of adding to Favourites
   useEffect(() => {
     if (tapCount === 2) {
       setIsPressed(true);
@@ -329,9 +269,7 @@ const SwipePage = ({ setFavourites }) => {
     }
   }, [tapCount]);
 
-  //added some error handling if img_url undefined
   const Card = ({ card }) => {
-    // Safety check - if card is undefined or null, show placeholder
     if (!card) {
       return (
         <View style={styles.card}>
@@ -354,27 +292,18 @@ const SwipePage = ({ setFavourites }) => {
         )}
         <Text style={styles.cardTitle}>{card.title || 'Untitled Item'}</Text>
         
-        {/* Share button on card */}
         <TouchableOpacity 
           style={styles.cardShareButton}
           onPress={() => shareItem(card)}
         >
           <Ionicons name="share-social" size={24} color="#7209b7" />
         </TouchableOpacity>
-        
-        {searchQuery !== '' && (
-          <View style={styles.searchMatchBadge}>
-            <Text style={styles.searchMatchText}>
-              🔍 Matches your search
-            </Text>
-          </View>
-        )}
       </View>
     );
   };
 
   const Buttons = () => {
-    const currentItem = filteredClothes[index];
+    const currentItem = clothesData[index];
     
     return (
       <View style={styles.icons}>
@@ -399,7 +328,6 @@ const SwipePage = ({ setFavourites }) => {
           color={colors.green}
           onPress={() => handleSwipeOnPress(1)}
         />
-        {/* Share Button */}
         <IconButton
           icon={(props) => <Icon name="sharealt" {...props} />}
           color={colors.violet}
@@ -426,50 +354,23 @@ const SwipePage = ({ setFavourites }) => {
     <LoadingSpinner />
   ) : (
     <View style={styles.container}>
-      {/* DISPLAY ERROR  */}
       {error && (
         <Text style={styles.errorText}>
-          An error occurred trying to fetch the data. Put a button here, try
-          again?
+          An error occurred trying to fetch the data.
         </Text>
       )}
       {!error && (
         <>
-          {/* SEARCH BAR */}
-          <View style={styles.searchContainer}>
-            <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search by title, brand, style, or category..."
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholderTextColor="#999"
-            />
-            {searchQuery !== '' && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Ionicons name="close-circle" size={20} color="#666" />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* SHOW SEARCH RESULTS COUNT */}
-          {searchQuery !== '' && (
-            <Text style={styles.searchResultsText}>
-              Found {filteredClothes.length} item{filteredClothes.length !== 1 ? 's' : ''}
-            </Text>
-          )}
-
           <View style={styles.swiperView}>
-            {/* DISPLAY ADDING TO FAVOURITES ANIMATION */}
             <LottieView
               ref={favAnimation}
               style={[styles.heartLottie, !isPressed && { display: "none" }]}
               source={require("../assets/like-button.json")}
             />
-            {filteredClothes.length > 0 ? (
+            {clothesData.length > 0 ? (
               <Swiper
                 ref={swiperRef}
-                cards={filteredClothes}
+                cards={clothesData}
                 cardIndex={index}
                 renderCard={(card) => <Card card={card} />}
                 onSwipedRight={() => handleSwipe(1)}
@@ -501,14 +402,7 @@ const SwipePage = ({ setFavourites }) => {
                   },
                 }}
               />
-            ) : (
-              <View style={styles.noResultsContainer}>
-                <Text style={styles.noResultsText}>No items match your search</Text>
-                <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <Text style={styles.clearSearchText}>Clear search</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+            ) : null}
           </View>
           <Buttons />
         </>
@@ -524,80 +418,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
-  },
-  searchContainer: {
-    position: "absolute",
-    top: 50,
-    left: 15,
-    right: 15,
-    zIndex: 100,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    paddingVertical: 8,
-  },
-  searchResultsText: {
-    position: "absolute",
-    top: 110,
-    left: 15,
-    zIndex: 100,
-    fontSize: 12,
-    color: "#666",
-    backgroundColor: "#fff",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  searchMatchBadge: {
-    position: "absolute",
-    bottom: 20,
-    backgroundColor: "#7209b7",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  searchMatchText: {
-    color: "#fff",
-    fontSize: 12,
-  },
-  noResultsContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    height: 500,
-  },
-  noResultsText: {
-    fontSize: 18,
-    color: "#666",
-    textAlign: "center",
-  },
-  clearSearchText: {
-    marginTop: 10,
-    color: "#7209b7",
-    fontSize: 16,
-  },
-  placeholderImage: {
-    width: "100%",
-    flex: 1,
-    backgroundColor: "#f0f0f0",
-    justifyContent: "center",
-    alignItems: "center",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-  },
-  placeholderText: {
-    color: "#999",
-    fontSize: 16,
   },
   swiperView: {
     position: "absolute",
@@ -671,6 +491,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+  },
+  placeholderImage: {
+    width: "100%",
+    flex: 1,
+    backgroundColor: "#f0f0f0",
+    justifyContent: "center",
+    alignItems: "center",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  placeholderText: {
+    color: "#999",
+    fontSize: 16,
   },
   icons: {
     width: "100%",
