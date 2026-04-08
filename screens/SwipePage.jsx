@@ -23,7 +23,7 @@ const SwipePage = ({ setFavourites }) => {
   const favAnimation = useRef(null);
   const [clothesData, setClothesData] = useState(data);
   const [filteredClothes, setFilteredClothes] = useState(data);
-  const [index, setIndex] = useState(1);
+  const [index, setIndex] = useState(0); // Changed from 1 to 0 to avoid out of bounds
   const [tapCount, setTapCount] = useState(0);
   const [lastTime, setLastTime] = useState(0);
   const [preferences, setPreferences] = useState({});
@@ -64,15 +64,18 @@ const SwipePage = ({ setFavourites }) => {
     if (searchQuery === '') {
       setFilteredClothes(clothesData);
     } else {
-      const filtered = clothesData.filter(item =>
-        item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.style?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.color?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      const filtered = clothesData.filter(item => {
+        if (!item) return false;
+        return (
+          (item.title?.toLowerCase().includes(searchQuery.toLowerCase()) || false) ||
+          (item.brand?.toLowerCase().includes(searchQuery.toLowerCase()) || false) ||
+          (item.style?.toLowerCase().includes(searchQuery.toLowerCase()) || false) ||
+          (item.category?.toLowerCase().includes(searchQuery.toLowerCase()) || false) ||
+          (item.color?.toLowerCase().includes(searchQuery.toLowerCase()) || false)
+        );
+      });
       setFilteredClothes(filtered);
-      // Reset index when filtering to avoid out of bounds
+      // Reset index when filtering
       setIndex(0);
     }
   }, [searchQuery, clothesData]);
@@ -83,8 +86,9 @@ const SwipePage = ({ setFavourites }) => {
       setIntialLoading(true);
       try {
         const clothesFromAPI = await suggestedClothes(user);
-        setClothesData(clothesFromAPI.data.suggestedClothes);
-        setFilteredClothes(clothesFromAPI.data.suggestedClothes);
+        const clothesArray = clothesFromAPI.data.suggestedClothes || [];
+        setClothesData(clothesArray);
+        setFilteredClothes(clothesArray);
         setIntialLoading(false);
       } catch (err) {
         setError(err);
@@ -97,7 +101,7 @@ const SwipePage = ({ setFavourites }) => {
       try {
         const userFromAPI = await getUser(user);
         const existingUserPreferences = JSON.parse(
-          userFromAPI.data.user.preferences
+          userFromAPI.data.user.preferences || "{}"
         );
 
         setPreferences(existingUserPreferences);
@@ -115,9 +119,7 @@ const SwipePage = ({ setFavourites }) => {
     const fetchSuggestedClothesAndConcat = async () => {
       try {
         const clothesFromAPI = await suggestedClothes(user);
-        const newData = clothesData.concat(
-          clothesFromAPI.data.suggestedClothes
-        );
+        const newData = [...clothesData, ...(clothesFromAPI.data.suggestedClothes || [])];
         setClothesData(newData);
         setFilteredClothes(newData);
       } catch (err) {
@@ -134,17 +136,18 @@ const SwipePage = ({ setFavourites }) => {
       }
     };
 
-    //on every 10th index
-    if (index % 10 === 0) {
+    // Make sure index is valid before doing anything
+    if (index > 0 && index % 10 === 0) {
       patchUserPreferencesUseEffect();
-      //every 10+5 index
-    } else if (index % 10 !== 0 && index % 5 === 0) {
+    } else if (index > 0 && index % 10 !== 0 && index % 5 === 0) {
       fetchSuggestedClothesAndConcat();
     }
   }, [index]);
 
   //this will add an item to user preferences
   const addToPreferences = (item) => {
+    if (!item) return;
+    
     //create a copy of preferences object from state
     let newPreferences = Object.assign({}, preferences);
 
@@ -196,6 +199,8 @@ const SwipePage = ({ setFavourites }) => {
   };
 
   const removeFromPreferences = (item) => {
+    if (!item) return;
+    
     let newPreferences = Object.assign({}, preferences);
     newPreferences.brand = newPreferences.brand || {};
     newPreferences.category = newPreferences.category || {};
@@ -248,22 +253,25 @@ const SwipePage = ({ setFavourites }) => {
   // GESTURES
   const handleSwipeOnPress = (preference) => {
     preference === 1
-      ? swiperRef.current.swipeRight()
-      : swiperRef.current.swipeLeft();
+      ? swiperRef.current?.swipeRight()
+      : swiperRef.current?.swipeLeft();
   };
 
   const handleSwipe = (preference) => {
     console.log(index);
-    if (preference === 1) {
-      addToPreferences(filteredClothes[index]);
-    } else {
-      removeFromPreferences(filteredClothes[index]);
+    const currentItem = filteredClothes[index];
+    if (currentItem) {
+      if (preference === 1) {
+        addToPreferences(currentItem);
+      } else {
+        removeFromPreferences(currentItem);
+      }
     }
     setIndex((currentIndex) => currentIndex + 1);
   };
 
   const handleSwipeBack = () => {
-    swiperRef.current.swipeBack();
+    swiperRef.current?.swipeBack();
     setIndex((currentIndex) => currentIndex - 1);
   };
 
@@ -271,12 +279,17 @@ const SwipePage = ({ setFavourites }) => {
     const myTime = new Date();
     const mySec = myTime.getTime();
     if (mySec - lastTime < 250) {
-      handleAddToFavorite(filteredClothes[index]);
+      const currentItem = filteredClothes[index];
+      if (currentItem) {
+        handleAddToFavorite(currentItem);
+      }
     }
     setLastTime(mySec);
   };
 
   const handleAddToFavorite = async (card) => {
+    if (!card) return;
+    
     console.log("double tap");
     setTapCount(2);
     try { 
@@ -311,24 +324,35 @@ const SwipePage = ({ setFavourites }) => {
   useEffect(() => {
     if (tapCount === 2) {
       setIsPressed(true);
-      favAnimation.current.play(5, 27);
-      favAnimation.current.play(27, 5);
+      favAnimation.current?.play(5, 27);
+      favAnimation.current?.play(27, 5);
     }
   }, [tapCount]);
 
   //added some error handling if img_url undefined
   const Card = ({ card }) => {
+    // Safety check - if card is undefined or null, show placeholder
+    if (!card) {
+      return (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Loading...</Text>
+        </View>
+      );
+    }
+    
     return (
       <View style={styles.card}>
         {card.item_img_url ? (
           <Image
-            source={{ uri: `https://${card.item_img_url}` }}
+            source={{ uri: card.item_img_url.startsWith('http') ? card.item_img_url : `https://${card.item_img_url}` }}
             style={styles.cardImage}
           />
         ) : (
-          <Text style={styles.cardTitle}>Error: Image URL is undefined</Text>
+          <View style={styles.placeholderImage}>
+            <Text style={styles.placeholderText}>No Image Available</Text>
+          </View>
         )}
-        <Text style={styles.cardTitle}>{card.title}</Text>
+        <Text style={styles.cardTitle}>{card.title || 'Untitled Item'}</Text>
         
         {/* Share button on card */}
         <TouchableOpacity 
@@ -350,6 +374,8 @@ const SwipePage = ({ setFavourites }) => {
   };
 
   const Buttons = () => {
+    const currentItem = filteredClothes[index];
+    
     return (
       <View style={styles.icons}>
         <IconButton
@@ -381,7 +407,7 @@ const SwipePage = ({ setFavourites }) => {
           backgroundColor={colors.white}
           borderWidth={1}
           borderColor={colors.border}
-          onPress={() => shareItem(filteredClothes[index])}
+          onPress={() => currentItem && shareItem(currentItem)}
         />
         <IconButton
           icon={(props) => <Icon name="heart" {...props} />}
@@ -390,7 +416,7 @@ const SwipePage = ({ setFavourites }) => {
           backgroundColor={colors.white}
           borderWidth={1}
           borderColor={colors.border}
-          onPress={() => handleAddToFavorite(filteredClothes[index])}
+          onPress={() => currentItem && handleAddToFavorite(currentItem)}
         />
       </View>
     );
@@ -558,6 +584,19 @@ const styles = StyleSheet.create({
   clearSearchText: {
     marginTop: 10,
     color: "#7209b7",
+    fontSize: 16,
+  },
+  placeholderImage: {
+    width: "100%",
+    flex: 1,
+    backgroundColor: "#f0f0f0",
+    justifyContent: "center",
+    alignItems: "center",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  placeholderText: {
+    color: "#999",
     fontSize: 16,
   },
   swiperView: {
