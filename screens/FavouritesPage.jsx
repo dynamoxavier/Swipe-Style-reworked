@@ -22,6 +22,12 @@ const FavouritesPage = ({
 }) => {
   const { theme } = useTheme();
 
+  const resolveImageUri = (uri) => {
+    if (!uri) return null;
+    if (uri.startsWith("http://") || uri.startsWith("https://")) return uri;
+    return `https://${uri}`;
+  };
+
   const handleNavigateToBasketPage = () => {
     navigation.navigate("Basket");
   };
@@ -63,7 +69,7 @@ const FavouritesPage = ({
             <Image
               style={styles.productImage}
               source={{
-                uri: `https://${item.item_img_url}`,
+                uri: resolveImageUri(item.item_img_url),
               }}
             />
           </View>

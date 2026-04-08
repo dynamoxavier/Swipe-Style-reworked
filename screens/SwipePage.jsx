@@ -17,7 +17,7 @@ import { UserContext } from "../contexts/userContext";
 import LoadingSpinner from "../components/LoadingSpinner.jsx";
 import { useTheme } from "../contexts/themeContext";
 
-const SwipePage = ({ setFavourites }) => {
+const SwipePage = ({ setFavourites, addToLikedHistory, addToDislikedHistory }) => {
   const { user } = useContext(UserContext);
   const { theme } = useTheme();
   const swiperRef = createRef();
@@ -211,11 +211,16 @@ const SwipePage = ({ setFavourites }) => {
 
   const handleSwipe = (preference) => {
     console.log(index);
+    const currentCard = clothesData[index];
+
     if (preference === 1) {
-      addToPreferences(clothesData[index]);
+      addToPreferences(currentCard);
+      addToLikedHistory?.(currentCard);
     } else {
-      removeFromPreferences(clothesData[index]);
+      removeFromPreferences(currentCard);
+      addToDislikedHistory?.(currentCard);
     }
+
     setIndex((currentIndex) => currentIndex + 1);
   };
 
@@ -274,12 +279,20 @@ const SwipePage = ({ setFavourites }) => {
   }, [tapCount]);
 
   // Card component with theme support
+  const resolveImageUri = (uri) => {
+    if (!uri) return null;
+    if (uri.startsWith("http://") || uri.startsWith("https://")) return uri;
+    return `https://${uri}`;
+  };
+
   const Card = ({ card }) => {
+    const imageUri = resolveImageUri(card.item_img_url);
+
     return (
       <View style={[styles.card, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}>
-        {card.item_img_url ? (
+        {imageUri ? (
           <Image
-            source={{ uri: `https://${card.item_img_url}` }}
+            source={{ uri: imageUri }}
             style={styles.cardImage}
           />
         ) : (

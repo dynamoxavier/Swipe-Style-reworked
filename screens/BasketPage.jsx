@@ -17,6 +17,12 @@ const BasketPage = ({ basket, setBasket }) => {
   const { theme } = useTheme();
   const [totalAmount, setTotalAmount] = useState(0);
 
+  const resolveImageUri = (uri) => {
+    if (!uri) return null;
+    if (uri.startsWith("http://") || uri.startsWith("https://")) return uri;
+    return `https://${uri}`;
+  };
+
   useEffect(() => {
     let totalPrice = 0;
 
@@ -35,7 +41,7 @@ const BasketPage = ({ basket, setBasket }) => {
           <Image
             style={styles.productImage}
             source={{
-              uri: `https://${item.item_img_url}`,
+              uri: resolveImageUri(item.item_img_url),
             }}
           />
         </View>

@@ -5,6 +5,7 @@ import SwipePage from "../screens/SwipePage";
 import FavouritesPage from "../screens/FavouritesPage";
 import BasketPage from "../screens/BasketPage";
 import SettingsPage from "../screens/SettingsPage";
+import HistoryPage from "../screens/HistoryPage";
 import Icon from "react-native-vector-icons/AntDesign";
 import { UserContext } from "../contexts/userContext";
 import { useTheme } from "../contexts/themeContext";
@@ -14,9 +15,19 @@ export default function App() {
   const Tab = createMaterialTopTabNavigator();
   const [favourites, setFavourites] = useState([]);
   const [basket, setBasket] = useState([]);
+  const [likedHistory, setLikedHistory] = useState([]);
+  const [dislikedHistory, setDislikedHistory] = useState([]);
 
   const { user } = useContext(UserContext);
   const { theme } = useTheme();
+
+  const addToLikedHistory = (item) => {
+    setLikedHistory((prev) => [item, ...prev]);
+  };
+
+  const addToDislikedHistory = (item) => {
+    setDislikedHistory((prev) => [item, ...prev]);
+  };
 
   useEffect(() => {
     getFavouritesByUserId(user)
@@ -56,7 +67,12 @@ export default function App() {
       <Tab.Screen
         name="Home"
         children={(props) => (
-          <SwipePage setFavourites={setFavourites} {...props} />
+          <SwipePage
+            setFavourites={setFavourites}
+            addToLikedHistory={addToLikedHistory}
+            addToDislikedHistory={addToDislikedHistory}
+            {...props}
+          />
         )}
         options={{
           tabBarIcon: () => <Icon name="home" size={25} />,
@@ -89,6 +105,19 @@ export default function App() {
         component={SettingsPage}
         options={{
           tabBarIcon: () => <Icon name="setting" size={25} />,
+        }}
+      />
+      <Tab.Screen
+        name="History"
+        children={(props) => (
+          <HistoryPage
+            likedHistory={likedHistory}
+            dislikedHistory={dislikedHistory}
+            {...props}
+          />
+        )}
+        options={{
+          tabBarIcon: () => <Icon name="clockcircleo" size={25} />,
         }}
       />
     </Tab.Navigator>
