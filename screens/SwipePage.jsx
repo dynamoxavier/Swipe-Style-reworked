@@ -11,13 +11,14 @@ import {
   patchUserPreferences,
   getUser,
   postFavouritesByUserId,
+  getClothesList,
 } from "../utils/api.js";
 import { useContext } from "react";
 import { UserContext } from "../contexts/userContext";
 import LoadingSpinner from "../components/LoadingSpinner.jsx";
 import { useTheme } from "../contexts/themeContext";
 
-const SwipePage = ({ setFavourites }) => {
+const SwipePage = ({ setFavourites, addToLikedHistory, addToDislikedHistory }) => {
   const { user } = useContext(UserContext);
   const { theme } = useTheme();
   const swiperRef = createRef();
@@ -34,10 +35,13 @@ const SwipePage = ({ setFavourites }) => {
   //this fetches the initial array of 10 items. user.uid needs passing in
   //this gets the user object from the api, the user object will be passed in here and the user.uid will be put in the getUser
   useEffect(() => {
+    if (!user) return;
+
     const fetchInitialSuggestedClothes = async () => {
       setIntialLoading(true);
       try {
         const clothesFromAPI = await suggestedClothes(user);
+        console.log('API Response:', clothesFromAPI.data);
         setClothesData(clothesFromAPI.data.suggestedClothes);
         setIntialLoading(false);
       } catch (err) {
@@ -62,7 +66,7 @@ const SwipePage = ({ setFavourites }) => {
 
     fetchInitialSuggestedClothes();
     fetchUserDataThenSetPreferences();
-  }, []);
+  }, [user]);
 
   //user.uid will need passing in to these functions
   useEffect(() => {
@@ -209,11 +213,16 @@ const SwipePage = ({ setFavourites }) => {
 
   const handleSwipe = (preference) => {
     console.log(index);
+    const currentCard = clothesData[index];
+
     if (preference === 1) {
-      addToPreferences(clothesData[index]);
+      addToPreferences(currentCard);
+      addToLikedHistory?.(currentCard);
     } else {
-      removeFromPreferences(clothesData[index]);
+      removeFromPreferences(currentCard);
+      addToDislikedHistory?.(currentCard);
     }
+
     setIndex((currentIndex) => currentIndex + 1);
   };
 
@@ -272,12 +281,20 @@ const SwipePage = ({ setFavourites }) => {
   }, [tapCount]);
 
   // Card component with theme support
+  const resolveImageUri = (uri) => {
+    if (!uri) return null;
+    if (uri.startsWith("http://") || uri.startsWith("https://")) return uri;
+    return `https://${uri}`;
+  };
+
   const Card = ({ card }) => {
+    const imageUri = resolveImageUri(card.item_img_url);
+
     return (
       <View style={[styles.card, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}>
-        {card.item_img_url ? (
+        {imageUri ? (
           <Image
-            source={{ uri: `https://${card.item_img_url}` }}
+            source={{ uri: imageUri }}
             style={styles.cardImage}
           />
         ) : (
